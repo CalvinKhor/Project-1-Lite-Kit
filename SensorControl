@@ -1,0 +1,97 @@
+{  Project: EE-7 Practical 1
+  Platform: Parallel Project USB Board
+  Revision: 1.1
+  Author: Calvin Khor
+  Date: 3 Nov 2021
+  Log:
+        Date: Desc
+        20/11/2021: Sensor Control}
+
+
+CON
+
+
+
+    '' [Declare Pins for Ultra Sensors]
+    ultra1SCL = 6
+    ultra1SDA = 7
+
+    ultra2SCL = 8
+    ultra2SDA = 9
+
+    '' [Declare Pins for TOF Sensors]
+    tof1SCL = 0
+    tof1SDA = 1
+    tof1RST = 14
+
+
+    tof2SCL = 2
+    tof2SDA = 3
+    tof2RST = 15
+    tofadd = $29
+
+VAR  'Global Variable
+
+  long cogStack[128]  ' Stack space for cog
+  long cogIDNum        ' ID of new cog
+  long _Ms_001
+
+OBJ
+  Term  : "FullDuplexSerial.spin"              'UART COMM FOR DEBUGGING
+  Ultra : "EE-7_Ultra_v2.spin"                 ' EMBEDDED ULTRASENSOR FUNCTION IN EE-7_ULTRA
+  ToF[2]  : "EE-7_Tof.spin"                    ' IMPLEMENTED TOF FUNCTION IN EE7_TOF
+
+PUB Start(mainMSVal, mainToF1Add, mainTof2Add, mainUltra1Add, mainUltra2Add)
+
+    _Ms_001 := mainMSVal              'Read the value of a pause
+
+    StopCore
+
+    cogIDNum := cognew(sensorCore(mainToF1Add, mainToF2Add,mainUltra1Add, mainUltra2Add),@cogStack)
+return
+
+
+PUB StopCore  ' Stop the code in the core/cog and release the core/cog
+   if cogIDNum
+    COGSTOP(cogIDNum~)
+
+PUB sensorCore(  mainToF1Add, mainTof2Add, mainUltra1Add, mainUltra2Add )
+ '
+ 'Declaration & Initialisation
+Ultra.Init(ultra1SCL, ultra1SDA, 0)           'Assigning & initialising the first element in ultra
+Ultra.Init(ultra2SCL, ultra2SDA, 1)           'Assigning & initialising the second element in ultra
+
+ToFInit                                       ' Initialising for both TOF sensor
+
+  repeat
+    long[mainUltra1Add] := Ultra.readSensor(0)          'Reading value from first element
+    long[mainUltra2Add] := Ultra.readSensor(1)          'Reading value from second element
+    long[mainToF1Add] := ToF[0].GetSingleRange(tofAdd)
+    long[mainToF2Add] := ToF[1].GetSingleRange(tofAdd)
+    Pause(50)
+
+PRI tofInit                     | i
+ToF[0].Init(tof1SCL, tof2SDA, tof1RST)
+ToF[0].ChipReset(1)                         'Last state ON position
+Pause(1000)
+ToF[0].FreshReset(tofAdd)
+ToF[0].MandatoryLoad(tofAdd)
+ToF[0].RecommendedLoad(tofAdd)
+ToF[0].FreshReset(tofAdd)
+
+
+ToF[1].Init(tof2SCL, tof2SDA, tof2RST)
+ToF[1].ChipReset(1)                         'Last state ON position
+Pause(1000)
+ToF[1].FreshReset(tofAdd)
+ToF[1].MandatoryLoad(tofAdd)
+ToF[1].RecommendedLoad(tofAdd)
+ToF[1].FreshReset(tofAdd)
+
+PRI Pause(ms) | t
+  t := cnt - 1088   ' sync with system counter
+  repeat (ms #> 0)  ' delay must be >0
+    waitcnt(t += _Ms_001)
+  return
+DAT
+name    byte  "string_data",0
