@@ -43,7 +43,7 @@ PUB Start(msval, rxvalue, mainToF1Add, mainToF2Add, mainUltra1Add, mainUltra2Add
  'Term.Start(31, 30 ,0, 115200)
   _ms_001 := msval
      Motors.Init
-   Motors.AddSlowPin(motor1)
+   Motors.AddSlowPin(motor1)                                'Intialisation & Declaration
    Motors.AddSlowPin(motor2)
    Motors.AddSlowPin(motor3)
    Motors.AddSlowPin(motor4)
